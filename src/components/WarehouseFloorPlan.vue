@@ -10,39 +10,37 @@
           <h1>Floor Plan Visualization</h1>
         </div>
         <div class="header-right">
-          <button @click="toggleSettings" class="show-controls-button">Show Controls</button>
-        </div>
-      </div>
-      <div v-if="showSettings">
-        <label for="group-select">Group:</label>
-        <select id="group-select" v-model="selectedGroup" @change="updateURL">
-          <option v-for="group in groups" :key="group" :value="group">{{ group }}</option>
-        </select>
-  
-        <label for="x-mirror-select">X Mirror:</label>
-        <select id="x-mirror-select" v-model="xMirrorMode" @change="updateURL">
+          <button @click="toggleControlsDropdown" class="show-controls-button">Show Controls</button>
+          <div v-if="showControlsDropdown" class="controls-dropdown">
+            <label for="group-select">Group:</label>
+            <select id="group-select" v-model="selectedGroup" @change="updateURL">
+              <option v-for="group in groups" :key="group" :value="group">{{ group }}</option>
+            </select>
+            <label for="ware-id-select">Ware ID:</label>
+            <select id="ware-id-select" v-model="wareId" @change="updateURL">
+              <option value="291">TRT</option>
+              <option value="293">MTL</option>
+            </select>
+            <label for="x-mirror-select">X Mirror:</label>
+          <select id="x-mirror-select" v-model="xMirrorMode" @change="updateURL">
           <option value="standard">Standard</option>
           <option value="mirror">Mirror</option>
-        </select>
-  
-        <label for="y-mirror-select">Y Mirror:</label>
-        <select id="y-mirror-select" v-model="yMirrorMode" @change="updateURL">
-          <option value="standard">Standard</option>
-          <option value="mirror">Mirror</option>
-        </select>
-  
-        <div id="z-index-controls">
-          <label v-for="index in availableZIndices" :key="index">
-            <input type="checkbox" :value="index" v-model="selectedZIndices" @change="updateURL" /> Z {{ index }}
-          </label>
+            </select>
+            <label for="y-mirror-select">Y Mirror:</label>
+            <select id="y-mirror-select" v-model="yMirrorMode" @change="updateURL">
+              <option value="standard">Standard</option>
+              <option value="mirror">Mirror</option>
+            </select>
+            <div id="z-index-controls">
+              <label v-for="index in availableZIndices" :key="index">
+                <input type="checkbox" :value="index" v-model="selectedZIndices" @change="updateURL" /> Z {{ index }}
+              </label>
+            </div>
+            <!-- Add other dropdown items as necessary -->
+          </div>
         </div>
-  
-        <label for="ware-id-select">Ware ID:</label>
-        <select id="ware-id-select" v-model="wareId" @change="updateURL">
-          <option value="291">291</option>
-          <!-- Add other options as necessary -->
-        </select>
       </div>
+  
   
       <div id="floor-plan" class="floor-plan" :style="gridStyle">
         <div v-if="filteredLocations.length === 0">No locations available for the selected group.</div>
@@ -76,7 +74,8 @@
         selectedZIndices: ['1', '2', '3'],
         wareId: '291',
         inventoryData: [],
-        showSettings: false
+        showSettings: false,
+        showControlsDropdown: false // New property to control dropdown visibility
       };
     },
     computed: {
@@ -134,6 +133,9 @@
     methods: {
       toggleSettings() {
         this.showSettings = !this.showSettings;
+      },
+      toggleControlsDropdown() {
+        this.showControlsDropdown = !this.showControlsDropdown; // Toggle dropdown visibility
       },
       updateFloorPlan() {
         // Your logic to update the floor plan goes here.
@@ -204,11 +206,13 @@
           .join('<br>');
   
         return `
-          SKU ${skuCode}<br>
-          Name: ${skuName}<br>
-          Total: ${totalQty}<br>
-          Batch Info:<br>
-          Batch no            Expire_Date     Qty  <br>
+          SKU ${skuCode}
+          Name: ${skuName}
+          Total: ${totalQty}
+          
+          -------------------
+          Batch Info:
+          Batch no            Expire_Date     Qty  
           ${batchInfoString}
         `;
       },
@@ -253,7 +257,6 @@
       font-size: 12px;
       text-align: center;
       position: relative;
-      border: 1px solid #ccc;
       padding: 5px;
       background: #f9f9f9;
   }
@@ -368,7 +371,13 @@
     text-align: left; /* Align left and right sections */
   }
 
-  .header-right {
-    text-align: right; /* Align left and right sections */
+  .controls-dropdown {
+    position: absolute; /* Position dropdown relative to the button */
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px;
+    z-index: 1000; /* Ensure dropdown appears above other elements */
+    margin-top: 5px; /* Add some space between the button and dropdown */
   }
   </style>
