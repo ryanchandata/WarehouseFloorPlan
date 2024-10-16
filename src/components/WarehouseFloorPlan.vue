@@ -12,31 +12,48 @@
         <div class="header-right">
           <button @click="toggleControlsDropdown" class="show-controls-button">Show Controls</button>
           <div v-if="showControlsDropdown" class="controls-dropdown">
-            <label for="group-select">Group:</label>
-            <select id="group-select" v-model="selectedGroup" @change="updateURL">
-              <option v-for="group in groups" :key="group" :value="group">{{ group }}</option>
-            </select>
-            <label for="ware-id-select">Ware ID:</label>
-            <select id="ware-id-select" v-model="wareId" @change="updateURL">
-              <option value="291">TRT</option>
-              <option value="293">MTL</option>
-            </select>
-            <label for="x-mirror-select">X Mirror:</label>
-          <select id="x-mirror-select" v-model="xMirrorMode" @change="updateURL">
-          <option value="standard">Standard</option>
-          <option value="mirror">Mirror</option>
-            </select>
-            <label for="y-mirror-select">Y Mirror:</label>
-            <select id="y-mirror-select" v-model="yMirrorMode" @change="updateURL">
-              <option value="standard">Standard</option>
-              <option value="mirror">Mirror</option>
-            </select>
-            <div id="z-index-controls">
-              <label v-for="index in availableZIndices" :key="index">
-                <input type="checkbox" :value="index" v-model="selectedZIndices" @change="updateURL" /> Z {{ index }}
-              </label>
+            <div>
+              <label for="group-select">Group:</label>
+              <select id="group-select" v-model="selectedGroup" @change="updateURL">
+                <option v-for="group in groups" :key="group" :value="group">{{ group }}</option>
+              </select>
             </div>
-            <!-- Add other dropdown items as necessary -->
+            <div>
+              <label for="ware-id-select">Ware ID:</label>
+              <select id="ware-id-select" v-model="wareId" @change="updateURL">
+                <option value="TRT">TRT</option>
+                <option value="MTL">MTL</option>
+              </select>
+            </div>
+            <div>
+              <label for="x-mirror-select">X Mirror:</label>
+              <select id="x-mirror-select" v-model="xMirrorMode" @change="updateURL">
+                <option value="standard">Standard</option>
+                <option value="mirror">Mirror</option>
+              </select>
+            </div>
+            <div>
+              <label for="y-mirror-select">Y Mirror:</label>
+              <select id="y-mirror-select" v-model="yMirrorMode" @change="updateURL">
+                <option value="standard">Standard</option>
+                <option value="mirror">Mirror</option>
+              </select>
+            </div>
+            <div>
+              <label>Z Levels:</label>
+              <div>
+                <input type="checkbox" id="z1" value="1" v-model="selectedZIndices" @change="updateURL" />
+                <label for="z1">Z 1</label>
+              </div>
+              <div>
+                <input type="checkbox" id="z2" value="2" v-model="selectedZIndices" @change="updateURL" />
+                <label for="z2">Z 2</label>
+              </div>
+              <div>
+                <input type="checkbox" id="z3" value="3" v-model="selectedZIndices" @change="updateURL" />
+                <label for="z3">Z 3</label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -209,7 +226,7 @@
           SKU ${skuCode}
           Name: ${skuName}
           Total: ${totalQty}
-          
+          Day in Storage: XXXX (=today- modify date)
           -------------------
           Batch Info:
           Batch no            Expire_Date     Qty  
@@ -367,17 +384,26 @@
     text-align: center; /* Center the title */
   }
 
-  .header-left, .header-right {
+  .header-left {
     text-align: left; /* Align left and right sections */
   }
 
+  .header-right {
+    text-align: right; /* Align left and right sections */
+  }
   .controls-dropdown {
-    position: absolute; /* Position dropdown relative to the button */
+    position: relative; /* Position dropdown relative to the button */
     background-color: white;
     border: 1px solid #ccc;
     border-radius: 4px;
     padding: 10px;
     z-index: 1000; /* Ensure dropdown appears above other elements */
     margin-top: 5px; /* Add some space between the button and dropdown */
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+  }
+
+  .controls-dropdown div {
+    margin-bottom: 10px; /* Add space between each option */
   }
   </style>
