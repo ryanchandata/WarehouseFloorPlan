@@ -119,6 +119,9 @@
 
         for (let y = 1; y <= this.maxCoordinates.maxY; y++) {
           const actualY = this.yMirrorMode === 'mirror' ? this.maxCoordinates.maxY - y + 1 : y;
+
+          // Skip any y = x.5 locations
+          if (y % 1 !== 0) continue; // Bypass decimal Y values
           
           // Add regular cells
           for (let x = 1; x <= this.maxCoordinates.maxX; x++) {
@@ -127,8 +130,9 @@
               loc => parseInt(loc.X, 10) === x && parseInt(loc.Y, 10) === y
             ).sort((a, b) => parseInt(b.Z, 10) - parseInt(a.Z, 10));
 
+            // Exclude locations with decimal Y values
             const items = locations
-              .filter(location => this.selectedZIndices.includes(location.Z))
+              .filter(location => this.selectedZIndices.includes(location.Z) && !location.Y.includes('.'))
               .map(location => ({
                 key: `${location.cell_code}-${location.Z}`,
                 class: [
@@ -157,23 +161,44 @@
 
           if (aisleLocations.length > 0) {
             currentRow++; // Increment row counter for aisle
-            cells.push({
-              key: `aisle-${y}`,
-              style: { 
-                gridColumn: `1 / span ${this.maxCoordinates.maxX}`, 
-                gridRow: currentRow,
-                height: '20px',
-                backgroundColor: '#f0f0f0',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center'
-              },
-              items: [{
-                key: `aisle-label-${y}`,
-                class: ['aisle-label'],
-                cellCode: aisleLocations[0].cell_code, // Display the aisle location code
-                z: 'aisle'
-              }]
+            
+            // Group aisles by their X coordinates
+            const aisleGroups = aisleLocations.reduce((groups, loc) => {
+              const x = parseInt(loc.X, 10);
+              if (!groups[x]) {
+                groups[x] = [];
+              }
+              groups[x].push(loc);
+              return groups;
+            }, {});
+
+            // Sort X coordinates
+            const xCoordinates = Object.keys(aisleGroups).sort((a, b) => parseInt(a) - parseInt(b));
+
+            // Create aisle sections for each X coordinate group
+            xCoordinates.forEach(x => {
+              const startX = parseInt(x);
+              const nextX = xCoordinates.find(coord => parseInt(coord) > startX);
+              const endX = nextX ? parseInt(nextX) - 1 : this.maxCoordinates.maxX;
+
+              cells.push({
+                key: `aisle-${y}-${x}`,
+                style: { 
+                  gridColumn: `${startX} / span ${endX - startX + 1}`, 
+                  gridRow: currentRow,
+                  height: '20px',
+                  backgroundColor: '#f0f0f0',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                },
+                items: [{
+                  key: `aisle-label-${y}-${x}`,
+                  class: ['aisle-label'],
+                  cellCode: aisleGroups[x][0].cell_code,
+                  z: 'aisle'
+                }]
+              });
             });
           }
 
@@ -454,6 +479,8 @@
     margin: 0;
   }
   </style>
+
+
 
 
 
