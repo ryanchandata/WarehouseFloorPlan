@@ -108,19 +108,25 @@
       },
       gridStyle() {
         return {
-          gridTemplateColumns: `repeat(${this.maxCoordinates.maxX}, 1fr)`
+          display: 'grid',
+          gridTemplateColumns: `repeat(${this.maxCoordinates.maxX}, 1fr)`,
+          gridAutoRows: 'auto' // Allow grid to create rows as needed
         };
       },
       floorPlanCells() {
         const cells = [];
+        let currentRow = 1; // Track the actual grid row number
+
         for (let y = 1; y <= this.maxCoordinates.maxY; y++) {
           const actualY = this.yMirrorMode === 'mirror' ? this.maxCoordinates.maxY - y + 1 : y;
+          
+          // Add regular cells
           for (let x = 1; x <= this.maxCoordinates.maxX; x++) {
             const actualX = this.xMirrorMode === 'mirror' ? this.maxCoordinates.maxX - x + 1 : x;
             const locations = this.filteredLocations.filter(
               loc => parseInt(loc.X, 10) === x && parseInt(loc.Y, 10) === y
             ).sort((a, b) => parseInt(b.Z, 10) - parseInt(a.Z, 10));
-  
+
             const items = locations
               .filter(location => this.selectedZIndices.includes(location.Z))
               .map(location => ({
@@ -134,15 +140,44 @@
                 cellCode: location.cell_code,
                 itemCode: location.itemCode,
                 qty: location.qty,
-                z: location.Z // Ensure `z` is assigned correctly
+                z: location.Z
               }));
-  
+
             cells.push({
               key: `${actualX}-${actualY}`,
-              style: { gridColumn: actualX, gridRow: actualY },
+              style: { gridColumn: actualX, gridRow: currentRow },
               items
             });
           }
+
+          // Check for aisles (Y + 0.5)
+          const aisleLocations = this.filteredLocations.filter(
+            loc => parseInt(loc.Y, 10) === y && loc.Y.includes('.5')
+          );
+
+          if (aisleLocations.length > 0) {
+            currentRow++; // Increment row counter for aisle
+            cells.push({
+              key: `aisle-${y}`,
+              style: { 
+                gridColumn: `1 / span ${this.maxCoordinates.maxX}`, 
+                gridRow: currentRow,
+                height: '20px',
+                backgroundColor: '#f0f0f0',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center'
+              },
+              items: [{
+                key: `aisle-label-${y}`,
+                class: ['aisle-label'],
+                cellCode: aisleLocations[0].cell_code, // Display the aisle location code
+                z: 'aisle'
+              }]
+            });
+          }
+
+          currentRow++; // Increment row counter for next regular row
         }
         return cells;
       }
@@ -407,3 +442,19 @@
     margin-bottom: 10px; /* Add space between each option */
   }
   </style>
+
+  <style scoped>
+  .aisle-label {
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+    padding: 2px 8px;
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    margin: 0;
+  }
+  </style>
+
+
+
+
