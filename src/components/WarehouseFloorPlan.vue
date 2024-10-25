@@ -100,10 +100,13 @@
         return this.locationData.filter(loc => loc.area_code === this.selectedGroup);
       },
       maxCoordinates() {
+        if (this.filteredLocations.length === 0) {
+          return { maxX: 0, maxY: 0, maxZ: 0 };
+        }
         return {
-          maxX: Math.max(...this.filteredLocations.map(loc => parseInt(loc.X, 10))),
-          maxY: Math.max(...this.filteredLocations.map(loc => parseInt(loc.Y, 10))),
-          maxZ: Math.max(...this.filteredLocations.map(loc => parseInt(loc.Z, 10)))
+          maxX: Math.max(...this.filteredLocations.map(loc => parseInt(loc.X, 10))) || 0,
+          maxY: Math.max(...this.filteredLocations.map(loc => parseInt(loc.Y, 10))) || 0,
+          maxZ: Math.max(...this.filteredLocations.map(loc => parseInt(loc.Z, 10))) || 0
         };
       },
       gridStyle() {
@@ -115,24 +118,56 @@
       },
       floorPlanCells() {
         const cells = [];
-        let currentRow = 1; // Track the actual grid row number
-
+        
+        // Process all coordinates first to ensure proper ordering
+        const coordinates = [];
         for (let y = 1; y <= this.maxCoordinates.maxY; y++) {
-          const actualY = this.yMirrorMode === 'mirror' ? this.maxCoordinates.maxY - y + 1 : y;
-
-          // Skip any y = x.5 locations
-          if (y % 1 !== 0) continue; // Bypass decimal Y values
-          
-          // Add regular cells
+          if (y % 1 !== 0) continue;
           for (let x = 1; x <= this.maxCoordinates.maxX; x++) {
-            const actualX = this.xMirrorMode === 'mirror' ? this.maxCoordinates.maxX - x + 1 : x;
+            coordinates.push({ x, y });
+          }
+        }
+
+        // Sort coordinates based on Y value and mirror mode
+        coordinates.sort((a, b) => {
+          if (this.yMirrorMode === 'mirror') {
+            return a.y - b.y; // Top to bottom
+          } else {
+            return b.y - a.y; // Bottom to top
+          }
+        });
+
+        // Group coordinates by Y value to maintain rows
+        const rows = coordinates.reduce((acc, coord) => {
+          if (!acc[coord.y]) acc[coord.y] = [];
+          acc[coord.y].push(coord);
+          return acc;
+        }, {});
+
+        // Process rows in order
+        let currentRow = 1;
+        const sortedYValues = Object.keys(rows)
+          .map(Number)
+          .sort((a, b) => this.yMirrorMode === 'mirror' ? a - b : b - a);
+
+        for (let i = 0; i < sortedYValues.length; i++) {
+          const y = sortedYValues[i];
+          
+          // Add regular cells for current Y
+          rows[y].forEach(({ x }) => {
+            const actualX = this.xMirrorMode === 'mirror' ? 
+              this.maxCoordinates.maxX - x + 1 : x;
+            
             const locations = this.filteredLocations.filter(
-              loc => parseInt(loc.X, 10) === x && parseInt(loc.Y, 10) === y
+              loc => parseInt(loc.X, 10) === x && 
+                    parseInt(loc.Y, 10) === y
             ).sort((a, b) => parseInt(b.Z, 10) - parseInt(a.Z, 10));
 
-            // Exclude locations with decimal Y values
             const items = locations
-              .filter(location => this.selectedZIndices.includes(location.Z) && !location.Y.includes('.'))
+              .filter(location => 
+                this.selectedZIndices.includes(location.Z) && 
+                !location.Y.includes('.')
+              )
               .map(location => ({
                 key: `${location.cell_code}-${location.Z}`,
                 class: [
@@ -148,62 +183,73 @@
               }));
 
             cells.push({
-              key: `${actualX}-${actualY}`,
-              style: { gridColumn: actualX, gridRow: currentRow },
+              key: `${actualX}-${y}`,
+              style: { 
+                gridColumn: actualX, 
+                gridRow: currentRow 
+              },
               items
             });
-          }
+          });
 
-          // Check for aisles (Y + 0.5)
-          const aisleLocations = this.filteredLocations.filter(
-            loc => parseInt(loc.Y, 10) === y && loc.Y.includes('.5')
-          );
+          // Check for aisles after current row
+          if (i < sortedYValues.length - 1) {
+            const currentY = y;
+            const nextY = sortedYValues[i + 1];
+            const aisleY = (currentY + nextY) / 2;
 
-          if (aisleLocations.length > 0) {
-            currentRow++; // Increment row counter for aisle
-            
-            // Group aisles by their X coordinates
-            const aisleGroups = aisleLocations.reduce((groups, loc) => {
-              const x = parseInt(loc.X, 10);
-              if (!groups[x]) {
-                groups[x] = [];
-              }
-              groups[x].push(loc);
-              return groups;
-            }, {});
+            const aisleLocations = this.filteredLocations.filter(
+              loc => parseFloat(loc.Y) === aisleY
+            );
 
-            // Sort X coordinates
-            const xCoordinates = Object.keys(aisleGroups).sort((a, b) => parseInt(a) - parseInt(b));
+            if (aisleLocations.length > 0) {
+              currentRow++;
+              
+              // Group aisles by their X coordinates
+              const aisleGroups = aisleLocations.reduce((groups, loc) => {
+                const x = parseInt(loc.X, 10);
+                if (!groups[x]) {
+                  groups[x] = [];
+                }
+                groups[x].push(loc);
+                return groups;
+              }, {});
 
-            // Create aisle sections for each X coordinate group
-            xCoordinates.forEach(x => {
-              const startX = parseInt(x);
-              const nextX = xCoordinates.find(coord => parseInt(coord) > startX);
-              const endX = nextX ? parseInt(nextX) - 1 : this.maxCoordinates.maxX;
+              // Sort X coordinates
+              const xCoordinates = Object.keys(aisleGroups)
+                .sort((a, b) => parseInt(a) - parseInt(b));
 
-              cells.push({
-                key: `aisle-${y}-${x}`,
-                style: { 
-                  gridColumn: `${startX} / span ${endX - startX + 1}`, 
-                  gridRow: currentRow,
-                  height: '20px',
-                  backgroundColor: '#f0f0f0',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center'
-                },
-                items: [{
-                  key: `aisle-label-${y}-${x}`,
-                  class: ['aisle-label'],
-                  cellCode: aisleGroups[x][0].cell_code,
-                  z: 'aisle'
-                }]
+              // Create aisle sections
+              xCoordinates.forEach(x => {
+                const startX = parseInt(x);
+                const nextX = xCoordinates.find(coord => parseInt(coord) > startX);
+                const endX = nextX ? parseInt(nextX) - 1 : this.maxCoordinates.maxX;
+
+                cells.push({
+                  key: `aisle-${aisleY}-${x}`,
+                  style: { 
+                    gridColumn: `${startX} / span ${endX - startX + 1}`, 
+                    gridRow: currentRow,
+                    height: '20px',
+                    backgroundColor: '#f0f0f0',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                  },
+                  items: [{
+                    key: `aisle-label-${aisleY}-${x}`,
+                    class: ['aisle-label'],
+                    cellCode: aisleGroups[x][0].cell_code,
+                    z: 'aisle'
+                  }]
+                });
               });
-            });
+            }
           }
 
-          currentRow++; // Increment row counter for next regular row
+          currentRow++;
         }
+
         return cells;
       }
     },
@@ -479,6 +525,14 @@
     margin: 0;
   }
   </style>
+
+
+
+
+
+
+
+
 
 
 
