@@ -59,27 +59,42 @@
       </div>
   
   
-      <div id="floor-plan" class="floor-plan" :style="gridStyle">
-        <div v-if="filteredLocations.length === 0">No locations available for the selected group.</div>
-        <div v-for="location in floorPlanCells" :key="location.key" :style="location.style" class="location">
-  <div
-    v-for="item in location.items"
-    :key="item.key"
-    :class="item.class"
-    :title="item.tooltip"
-    :data-z="item.z"
-  >
-    <strong>{{ item.cellCode }}</strong><br />
-    <span v-if="item.itemCode">{{ item.itemCode }}<br />Qty: {{ item.qty }}</span>
-  </div>
+      <!-- Wrap the floor plan in vue-zoomable -->
+      <vue-zoomable
+        :min-scale="0.5"
+        :max-scale="3"
+        :zoom-speed="0.1"
+        :center-on-click="false"
+      >
+        <div id="floor-plan" class="floor-plan" :style="gridStyle">
+          <div v-if="filteredLocations.length === 0">No locations available for the selected group.</div>
+          <div v-for="location in floorPlanCells" :key="location.key" :style="location.style" class="location">
+    <div
+      v-for="item in location.items"
+      :key="item.key"
+      :class="item.class"
+      :title="item.tooltip"
+      :data-z="item.z"
+    >
+      <strong>{{ item.cellCode }}</strong><br />
+      <span v-if="item.itemCode">{{ item.itemCode }}<br />Qty: {{ item.qty }}</span>
+    </div>
   
         </div>
       </div>
+    </vue-zoomable>
+
     </div>
   </template>
   
   <script>
+  import { VueZoomable } from 'vue-zoomable'
+  import "vue-zoomable/dist/style.css";
+  
   export default {
+    components: {
+      VueZoomable
+    },
     data() {
       return {
         locationData: [],
@@ -92,7 +107,8 @@
         wareId: '291',
         inventoryData: [],
         showSettings: false,
-        showControlsDropdown: false // New property to control dropdown visibility
+        showControlsDropdown: false, // New property to control dropdown visibility
+        zoomInstance: null,
       };
     },
     computed: {
@@ -304,12 +320,32 @@
         if (xMirror) this.xMirrorMode = xMirror;
         if (yMirror) this.yMirrorMode = yMirror;
         this.selectedZIndices = zIndices;
-      }
+      },
+      zoomIn() {
+        if (this.zoomInstance) {
+          this.zoomInstance.zoomIn()
+        }
+      },
+      zoomOut() {
+        if (this.zoomInstance) {
+          this.zoomInstance.zoomOut()
+        }
+      },
+      resetZoom() {
+        if (this.zoomInstance) {
+          this.zoomInstance.resetZoom()
+        }
+      },
     },
     mounted() {
       this.fetchData();
       const formData = new URLSearchParams(window.location.search);
       this.setInitialValuesFromPOST(formData);
+
+      // Get the vue-zoomable instance
+      this.$nextTick(() => {
+        this.zoomInstance = this.$children.find(child => child.$options.name === 'vue-zoomable')
+      })
     }
   };
   </script>
@@ -479,6 +515,31 @@
     margin: 0;
   }
   </style>
+
+  <style scoped>
+  .zoom-controls {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .zoom-controls button {
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  .zoom-controls button:hover {
+    background-color: #0056b3;
+  }
+  </style>
+
 
 
 
