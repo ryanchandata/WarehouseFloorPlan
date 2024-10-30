@@ -3,8 +3,18 @@
       <!-- New Header Section -->
       <div class="header">
         <div class="header-left">
-          <div>Picking xx/xx 80% Used</div>
-          <div>Storage xx/xx 80% Used</div>
+          <div class="usage-item">
+            <div>Picking 80% 80/100</div>
+            <div class="progress-bar">
+              <div class="progress" style="width: 80%"></div>
+            </div>
+          </div>
+          <div class="usage-item">
+            <div>Storage 80% 80/100</div>
+            <div class="progress-bar">
+              <div class="progress" style="width: 80%"></div>
+            </div>
+          </div>
         </div>
         <div class="header-center">
           <h1>Floor Plan Visualization</h1>
@@ -523,6 +533,28 @@
     background-color: #e0e0e0;
     border-radius: 4px;
     margin: 0;
+  }
+  </style>
+
+  <style scoped>
+  .usage-item {
+    margin-top: 10px;
+    margin-left: 1px;
+  }
+
+  .progress-bar {
+    width: 200px;
+    height: 12px;
+    background-color: #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+
+  .progress {
+    height: 100%;
+    background-color: #4285f4;
+    border-radius: 6px;
   }
   </style>
 
