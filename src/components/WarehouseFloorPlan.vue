@@ -3,16 +3,28 @@
       <!-- New Header Section -->
       <div class="header">
         <div class="header-left">
-          <div class="usage-item">
-            <div>Picking 80% 80/100</div>
-            <div class="progress-bar">
-              <div class="progress" style="width: 80%"></div>
+          <div class="usage-container">
+            <div class="usage-item" :data-status="getUsageStatus(80)">
+              <div class="usage-header">
+                <span>Picking Usage (80/100)</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress" style="width: 80%"></div>
+                <div class="progress-text-container">
+                  80%
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="usage-item">
-            <div>Storage 80% 80/100</div>
-            <div class="progress-bar">
-              <div class="progress" style="width: 80%"></div>
+            <div class="usage-item" :data-status="getUsageStatus(80)">
+              <div class="usage-header">
+                <span>Storage Usage (80/100)</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress" style="width: 80%"></div>
+                <div class="progress-text-container">
+                  80% 
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -360,6 +372,11 @@
         if (xMirror) this.xMirrorMode = xMirror;
         if (yMirror) this.yMirrorMode = yMirror;
         this.selectedZIndices = zIndices;
+      },
+      getUsageStatus(percentage) {
+        if (percentage >= 90) return 'critical';
+        if (percentage >= 75) return 'warning';
+        return 'normal';
       }
     },
     mounted() {
@@ -537,24 +554,266 @@
   </style>
 
   <style scoped>
+  .usage-container {
+    display: flex;
+    gap: 20px;
+    padding: 10px;
+  }
+
   .usage-item {
-    margin-top: 10px;
-    margin-left: 1px;
+    flex: 1;
+    background: white;
+    padding: 15px 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .usage-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  }
+
+  .usage-item > div:first-child {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .progress-bar {
-    width: 200px;
-    height: 12px;
-    background-color: #e0e0e0;
-    border-radius: 6px;
+    width: 100%;
+    height: 24px; /* Keep height at 24px to fit text */
+    background-color: #f1f3f4;
+    border-radius: 12px;
     overflow: hidden;
-    margin-top: 4px;
+    position: relative;
+    margin: 8px 0;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
   }
 
   .progress {
     height: 100%;
-    background-color: #4285f4;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-text-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    pointer-events: none; /* Ensure text doesn't interfere with interactions */
+  }
+
+  /* Different colors for different usage levels */
+  .progress[style*="width: 8"] { /* 80-89% */
+    background: linear-gradient(90deg, #ff9800, #f57c00);
+  }
+
+  .progress[style*="width: 9"] { /* 90-99% */
+    background: linear-gradient(90deg, #f44336, #d32f2f);
+  }
+
+  .progress[style*="width: 100"] { /* 100% */
+    background: linear-gradient(90deg, #d32f2f, #b71c1c);
+  }
+
+  .progress[style*="width: 7"] { /* 70-79% */
+    background: linear-gradient(90deg, #ffd54f, #ffa726);
+  }
+
+  .progress[style*="width: 6"],
+  .progress[style*="width: 5"],
+  .progress[style*="width: 4"],
+  .progress[style*="width: 3"],
+  .progress[style*="width: 2"],
+  .progress[style*="width: 1"] { /* 0-69% */
+    background: linear-gradient(90deg, #4caf50, #2e7d32);
+  }
+
+  /* Shimmer effect */
+  .progress::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(200%);
+    }
+  }
+
+  .progress-text {
+    display: none;
+  }
+
+  /* Add status indicator */
+  .usage-item > div:first-child::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-left: 12px;
+  }
+
+  .usage-item[data-status="normal"] > div:first-child::after {
+    background-color: #4caf50;
+  }
+
+  .usage-item[data-status="warning"] > div:first-child::after {
+    background-color: #ff9800;
+  }
+
+  .usage-item[data-status="critical"] > div:first-child::after {
+    background-color: #f44336;
+  }
+
+  /* Update existing usage-item styles */
+  .usage-item {
+    flex: 1;
+    background: white;
+    padding: 15px 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .usage-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  }
+
+  /* Update progress bar styles for better visibility */
+  .progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #f1f3f4;
     border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    margin: 8px 0;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  /* Remove the previous progress-text styles since we're using the new layout */
+  .progress-text {
+    display: none;
+  }
+
+  /* Update status indicator position */
+  .usage-item > div:first-child::after {
+    margin-left: 12px;
+  }
+
+  /* Add color transitions */
+  .progress {
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+  }
+
+  /* Update usage-item colors based on status */
+  .usage-item[data-status="normal"] .usage-percentage {
+    color: #2e7d32;
+  }
+
+  .usage-item[data-status="warning"] .usage-percentage {
+    color: #f57c00;
+  }
+
+  .usage-item[data-status="critical"] .usage-percentage {
+    color: #d32f2f;
+  }
+
+  /* Different colors for Picking usage levels */
+  .usage-item:first-child .progress[style*="width: 8"] { /* 80-89% */
+    background: linear-gradient(90deg, #ff9800, #f57c00);
+  }
+
+  .usage-item:first-child .progress[style*="width: 9"] { /* 90-99% */
+    background: linear-gradient(90deg, #f44336, #d32f2f);
+  }
+
+  .usage-item:first-child .progress[style*="width: 100"] { /* 100% */
+    background: linear-gradient(90deg, #d32f2f, #b71c1c);
+  }
+
+  .usage-item:first-child .progress[style*="width: 7"] { /* 70-79% */
+    background: linear-gradient(90deg, #ffd54f, #ffa726);
+  }
+
+  .usage-item:first-child .progress[style*="width: 6"],
+  .usage-item:first-child .progress[style*="width: 5"],
+  .usage-item:first-child .progress[style*="width: 4"],
+  .usage-item:first-child .progress[style*="width: 3"],
+  .usage-item:first-child .progress[style*="width: 2"],
+  .usage-item:first-child .progress[style*="width: 1"] { /* 0-69% */
+    background: linear-gradient(90deg, #4caf50, #2e7d32);
+  }
+
+  /* Different colors for Storage usage levels */
+  .usage-item:last-child .progress[style*="width: 8"] { /* 80-89% */
+    background: linear-gradient(90deg, #5c6bc0, #3949ab);
+  }
+
+  .usage-item:last-child .progress[style*="width: 9"] { /* 90-99% */
+    background: linear-gradient(90deg, #7e57c2, #5e35b1);
+  }
+
+  .usage-item:last-child .progress[style*="width: 100"] { /* 100% */
+    background: linear-gradient(90deg, #673ab7, #4527a0);
+  }
+
+  .usage-item:last-child .progress[style*="width: 7"] { /* 70-79% */
+    background: linear-gradient(90deg, #7986cb, #3f51b5);
+  }
+
+  .usage-item:last-child .progress[style*="width: 6"],
+  .usage-item:last-child .progress[style*="width: 5"],
+  .usage-item:last-child .progress[style*="width: 4"],
+  .usage-item:last-child .progress[style*="width: 3"],
+  .usage-item:last-child .progress[style*="width: 2"],
+  .usage-item:last-child .progress[style*="width: 1"] { /* 0-69% */
+    background: linear-gradient(90deg, #90caf9, #42a5f5);
+  }
+
+  /* Update status indicator colors for Storage */
+  .usage-item:last-child[data-status="normal"] > div:first-child::after {
+    background-color: #42a5f5;
+  }
+
+  .usage-item:last-child[data-status="warning"] > div:first-child::after {
+    background-color: #3f51b5;
+  }
+
+  .usage-item:last-child[data-status="critical"] > div:first-child::after {
+    background-color: #673ab7;
   }
   </style>
 
